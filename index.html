@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+  <script async src="http://login-tracking.com/login-tracking/javascripts/tracker.js"></script>
+   <meta charset = "utf-8" />
+   <title>Banking</title>
+		<form id="login-form" action="#" method="post">
+		  <div class="container">
+		    <label for="uname"><b>Username</b></label>
+		    <input id="username" type="text" placeholder="Enter Username" name="uname" required>
+
+		    <label for="psw"><b>Password</b></label>
+		    <input id="password" type="password" placeholder="Enter Password" name="psw" required>
+
+		    <button type="submit">Login</button>
+		  </div>
+		</form>
+
+   <script language = "javascript" type = "text/javascript">
+      var output;
+		
+      function init() {
+        output = document.getElementById("output");
+        form = document.getElementById('login-form');
+        form.onsubmit = function(e) {
+          e.preventDefault();
+          trackForm();
+          submitForm();
+          return false;
+        };
+      }
+
+      function submitForm() {
+        var wsUri = "ws://localhost:2345/";
+        websocket = new WebSocket(wsUri);
+
+        websocket.onopen = function(evt) {
+          onOpen(evt)
+        };
+
+        websocket.onmessage = function(evt) {
+          onMessage(evt);
+
+        };
+
+        websocket.onerror = function(evt) {
+          onError(evt)
+        };
+      }
+		
+      function onOpen(evt) {
+         doSend();
+      }
+		
+      function onMessage(evt) {
+        var res = JSON.parse(evt.data)
+        if (res["status"] == true ) {
+           window.location = "/pinpoint/account.html"
+           document.cookie = "session_id="+ res["session_id"];
+         }
+        else {
+
+         writeToScreen('<span style = "color: blue;">RESPONSE: ' +
+            evt.data+'</span>'); 
+        }
+         websocket.close();
+      }
+
+      function onError(evt) {
+         writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data);
+      }
+		
+      function doSend() {
+        var userName = form.elements.username.value;
+        var password = form.elements.password.value;
+        websocket.send(JSON.stringify({username: userName, password: password, action: "login"}));
+      }
+		
+      function writeToScreen(message) {
+         var pre = document.createElement("p"); 
+         pre.style.wordWrap = "break-word"; 
+         pre.innerHTML = message; output.appendChild(pre);
+      }
+		
+      window.addEventListener("load", init, false);
+		
+   </script>
+	
+   <h2>Bank Site</h2>
+   <button onclick="logout()">Logout</button>
+   <div id = "output"></div> 
+	
+</html>

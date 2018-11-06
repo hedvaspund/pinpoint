@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+   <meta charset = "utf-8" />
+   <title>Banking</title>
+   <script language = "javascript" type = "text/javascript">
+      var wsUri = "ws://localhost:2345/";
+      var output;
+
+      function getCookie(name) {
+        var nameEQ = name + "=";
+        var ca = document.cookie.split(';');
+        for(var i=0;i < ca.length;i++) {
+            var c = ca[i];
+            while (c.charAt(0)==' ') c = c.substring(1,c.length);
+            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+        }
+        return null;
+      }
+
+      function eraseCookie(name) {   
+        document.cookie = name+'=; Max-Age=-99999999;';  
+      }
+
+      function logout() {
+        // debugger
+        var sessionId = getCookie('session_id')
+        if (sessionId.length > 0) {
+          eraseCookie('session_id');
+          logoutServer(sessionId);
+        }
+      }
+      function logoutServer(sessionId) {
+         websocket = new WebSocket(wsUri);
+         websocket.onopen = function(evt) {
+          doSend(websocket.send(JSON.stringify({session_id: sessionId, action: "logout"})));
+         };
+         websocket.onmessage = function(evt) {
+            window.location = "/pinpoint";
+         };
+         websocket.onerror = function(evt) {
+            //onError(evt)
+         };
+      }
+
+      function init() {
+        output = document.getElementById("output");
+        getAccountInfo();
+      }
+    
+      function getAccountInfo() {
+         websocket = new WebSocket(wsUri);
+      
+         websocket.onopen = function(evt) {
+            onOpen(evt)
+         };
+    
+         websocket.onmessage = function(evt) {
+            onMessage(evt);
+
+         };
+    
+         websocket.onerror = function(evt) {
+            onError(evt)
+         };
+      }
+    
+      function onOpen(evt) {
+         var sessionId = getCookie('session_id')
+         doSend(websocket.send(JSON.stringify({session_id: sessionId, action: "account"})));
+      }
+    
+      function onMessage(evt) {
+        var res = JSON.parse(evt.data)
+        
+        if (res["status"] == true ) {
+          // debugger
+          writeToScreen('<span style = "color: blue;"> Hi '+ res["username"]+'</br> YOUR ACCOUNT STATUS IS: ' +
+            res["account"]["amount"]+'</span>');
+        }
+        else {
+           window.location = "/pinpoint"
+        } 
+        }
+
+      function onError(evt) {
+         writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data);
+      }
+    
+      function doSend(message) {
+         websocket.send(message);
+      }
+    
+      function writeToScreen(message) {
+         var pre = document.createElement("p"); 
+         pre.style.wordWrap = "break-word"; 
+         pre.innerHTML = message; output.appendChild(pre);
+      }
+    
+      window.addEventListener("load", init, false);
+    
+   </script>
+  
+    <h2>My Account Status</h2>
+    <button onclick="logout()">Logout</button>
+    <div id = "output"></div> 
+  
+</html>
